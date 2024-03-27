@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-Cn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ChatGpt</title>
+
+    <link rel="stylesheet" href="css/element-plus.css" />
+    <link rel="stylesheet" href="css/index.css" />
+
+    <script src="js/vue.js"></script>
+    <script src="js/element-plus.js"></script>
+    <script src="js/fetch.js"></script>
+  </head>
+  <body>
+    <div id="app" style="display: flex">
+      <!-- 左侧布局 -->
+      <div
+        style="
+          background-color: #fafafa;
+          border-right: 1px solid rgba(0, 0, 0, 0.08);
+          width: 260px;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          padding-top: 16px;
+        "
+      >
+        <!-- 按钮 -->
+        <div>
+          <div
+            style="
+              width: 92%;
+              margin: 0 auto;
+              margin-bottom: 8px;
+              padding: 12px;
+              display: flex;
+              justify-content: center;
+              cursor: pointer;
+              color: white;
+              background-color: var(--el-color-primary);
+              font-size: 14px;
+            "
+            @click="handleAdd"
+          >
+            新增聊天
+          </div>
+          <div
+            style="
+              width: 92%;
+              margin: 0 auto;
+              margin-bottom: 8px;
+              padding: 12px;
+              display: flex;
+              justify-content: center;
+              cursor: pointer;
+              color: var(--c-color-2);
+              font-size: 14px;
+              border: var(--c-color-2) solid 1px;
+            "
+            @click="handleDeleteAll"
+          >
+            全部清除
+          </div>
+        </div>
+
+        <!-- 聊天列表 -->
+        <ul style="height: 0; flex: 1; overflow: auto">
+          <li
+            @click="handleOpenChat(chat)"
+            :class="{ 'chat-active': currentChatId === chat.id  }"
+            style="
+              width: 92%;
+              margin: 0 auto;
+              margin-bottom: 8px;
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              justify-content: space-between;
+              cursor: pointer;
+              color: #666666;
+              font-size: 14px;
+            "
+            v-for="chat in chatList"
+          >
+            {{ chat.title }}
+          </li>
+        </ul>
+      </div>
+
+      <!-- 右侧布局 -->
+      <div style="width: 0; flex: 1; height: 100%; background-color: #ffffff">
+        <iframe
+          :src="'./chat.html' + '?id=' + currentChatId"
+          width="100%"
+          height="100%"
+          frameborder="0"
+          scrolling="no"
+        ></iframe>
+      </div>
+    </div>
+    <script>
+      const { createApp, ref } = Vue;
+
+      const app = createApp({
+        setup() {
+          const currentChatId = ref("");
+          const chatList = ref([]);
+          const handleOpenChat = (chat) => {
+            currentChatId.value = chat.id;
+          };
+          const getData = async (first_flag = false) => {
+            try {
+              const response = await fetchApi("/chat/list");
+              chatList.value = response.data;
+            } catch (error) {}
+          };
+          window.addEventListener(
+            "message",
+            async (event) => {
+              if (event.source.location.pathname.includes("index.html")) return;
+              await getData();
+              currentChatId.value = event.data;
+            },
+            false
+          );
+          const handleAdd = () => {
+            currentChatId.value = "";
+          };
+          const handleDeleteAll = () => {
+            ElementPlus.ElMessageBox.confirm("确定全部清除吗?", "提示", {
+              confirmButtonText: "确定",
+              cancelButtonText: "取消",
+              type: "warning",
+            })
+              .then(async () => {
+                try {
+                  const response = await fetchApi("/chat/all", "DELETE");
+                  ElementPlus.ElMessage.success("清除成功");
+                  await getData();
+                  handleAdd();
+                } catch (error) {}
+              })
+              .catch(() => {});
+          };
+
+          getData();
+
+          return {
+            currentChatId,
+            chatList,
+
+            handleAdd,
+            handleDeleteAll,
+            handleOpenChat,
+          };
+        },
+      });
+      app.use(ElementPlus);
+      app.mount("#app");
+    </script>
+  </body>
+</html>
