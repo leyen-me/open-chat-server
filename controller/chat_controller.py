@@ -153,6 +153,53 @@ def resume_():
     return Result.ok()
 
 
+def code_run(code):
+    """
+    运行代码
+    """
+    @contextlib.contextmanager
+    def stdoutIO(stdout=None):
+        old = sys.stdout
+        if stdout is None:
+            stdout = StringIO()
+        sys.stdout = stdout
+        yield stdout
+        sys.stdout = old
+
+    with stdoutIO() as s:
+        try:
+            import matplotlib
+            matplotlib.use('agg')
+            exec(code)
+        except Exception as e:
+            return "代码运行失败:" + str(e)
+    return "代码运行结果如下:" + s.getvalue()
+
+
+@chat_controller.route("/code/auto/run/<string:chat_id>", methods=["POST"])
+def code_auto_run_(chat_id):
+    """
+    Python自动运行代码
+    """
+    messages = get_context(chat_id, CHAT_TYPE.NORMAL)
+    if len(messages) <= 0:
+        return Result.ok()
+    message = messages[-1]
+    if message['role'] == "user":
+        return Result.ok()
+
+    pattern = r'```python(.*?)```'
+    matched_code = re.findall(pattern, message['content'], re.DOTALL)
+    for code in matched_code:
+        res = code_run(code)
+        assistant_context = ContextModel(
+            chat_id=chat_id, content=res, role="assistant", status=1, tool_name="", tool_parameters=None)
+        base_db.session.add(assistant_context)
+        base_db.session.commit()
+    
+    return Result.ok()
+
+
 @chat_controller.route("/code/run", methods=["POST"])
 def code_run_():
     """
@@ -169,7 +216,6 @@ def code_run_():
         sys.stdout = stdout
         yield stdout
         sys.stdout = old
-    
 
     if not language == "python":
         pass
@@ -198,8 +244,6 @@ def stream_():
 
     # 获取上下文
     messages = get_context(chat_id, CHAT_TYPE.NORMAL)
-
-    print(messages)
 
     # 开始询问
     stream_response = base_client.chat.completions.create(

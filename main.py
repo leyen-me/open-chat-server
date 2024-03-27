@@ -2,7 +2,7 @@ from flask import Flask, g
 from common import Result
 from controller import chat_controller, context_controller, type_controller
 from constants import HOST, PORT, DEBUG, UID, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ECHO, STATIC_FOLDER, base_db
-from constants import CHAT_SYSTEM_PROMPT, TRANSLATE_SYSTEM_PROMPT, MATPLOTLIB_SYSTEM_PROMPT
+from constants import CHAT_SYSTEM_PROMPT, TRANSLATE_SYSTEM_PROMPT, MATPLOTLIB_SYSTEM_PROMPT, IOT_SYSTEM_PROMPT
 from model import TypeModel
 
 app = Flask(__name__, static_folder=STATIC_FOLDER)
@@ -36,13 +36,23 @@ def db_init(app):
             base_db.session.add(translate_model)
             base_db.session.commit()
 
-        # 翻译
+        # 数据分析
         matplotlib_model = base_db.session.query(TypeModel).filter(
             TypeModel.code == "matplotlib").one_or_none()
         if not matplotlib_model:
             matplotlib_model = TypeModel(code="matplotlib", name="数据分析", user_id=UID,
                                          system_prompt=MATPLOTLIB_SYSTEM_PROMPT)
             base_db.session.add(matplotlib_model)
+            base_db.session.commit()
+
+        # 物联网
+        # 读取寄存器数据，从0开始，30个数，串口为4，打印输出
+        iot_model = base_db.session.query(TypeModel).filter(
+            TypeModel.code == "iot").one_or_none()
+        if not iot_model:
+            iot_model = TypeModel(code="iot", name="物联网", user_id=UID,
+                                  system_prompt=IOT_SYSTEM_PROMPT, code_auto_run=1)
+            base_db.session.add(iot_model)
             base_db.session.commit()
 
 

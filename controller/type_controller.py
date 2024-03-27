@@ -13,11 +13,5 @@ def list_():
         TypeModel).order_by(TypeModel.t.asc()).all()
     data = []
     for item in db_data:
-        data.append({
-            "id": item.id,
-            "code": item.code,
-            "user_id": item.user_id,
-            "name": item.name,
-            "create_time": str(item.create_time),
-        })
+        data.append(item.json())
     return Result.ok(data)

@@ -1,10 +1,7 @@
 from enum import Enum
 from .base_client import base_client as base_client
 from .base_client import BASE_MODEL as BASE_MODEL
-from .base_prompt import CHAT_SYSTEM_PROMPT as CHAT_SYSTEM_PROMPT
-from .base_prompt import RESUME_SYSTEM_PROMPT as RESUME_SYSTEM_PROMPT
-from .base_prompt import TRANSLATE_SYSTEM_PROMPT as TRANSLATE_SYSTEM_PROMPT
-from .base_prompt import MATPLOTLIB_SYSTEM_PROMPT as MATPLOTLIB_SYSTEM_PROMPT
+from .base_prompt import *
 from .base_db import base_db as base_db
 
 

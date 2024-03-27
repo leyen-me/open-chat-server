@@ -19,7 +19,10 @@
     <script src="js/fetch.js"></script>
   </head>
   <body>
-    <div id="app" style="padding-bottom: 40px;display: flex;flex-direction: column;">
+    <div
+      id="app"
+      style="padding-bottom: 40px; display: flex; flex-direction: column"
+    >
       <div style="padding: 20px">
         <el-button
           :disabled="messages.length > 0"
@@ -80,7 +83,7 @@
         v-show="messages.length > 0"
         id="messages"
         class="messages"
-        style="height: 0;flex: 1; overflow-y: auto; padding-bottom: 100px"
+        style="height: 0; flex: 1; overflow-y: auto; padding-bottom: 100px"
         ref="messagesRef"
       >
         <li
@@ -336,6 +339,24 @@
             }
           };
 
+          const handleCodeAutoRun = async () => {
+            const item = typeList.value.find(
+              (item) => typeCode.value === item.code
+            );
+            console.log("运行。。。。", item);
+            if (!item) {
+              return;
+            }
+            if (!item.code_auto_run) {
+              return;
+            }
+            // 自动运行代码
+            try {
+              const response = await fetchApi("/chat/code/auto/run/" + chatId.value, "POST");
+              getData(chatId.value);
+            } catch (error) {}
+          };
+
           const onSend = async () => {
             // 停止对话
             if (loading.value) {
@@ -417,6 +438,8 @@
                   scrollBottom(0);
                 }
               }
+
+              handleCodeAutoRun();
             } catch (error) {
               console.log("回答错误", error);
               ElementPlus.ElMessage.error("回答错误");
@@ -491,6 +514,8 @@
                   scrollBottom(0);
                 }
               }
+
+              handleCodeAutoRun();
             } catch (error) {
               console.log("回答错误", error);
               ElementPlus.ElMessage.error("回答错误");
