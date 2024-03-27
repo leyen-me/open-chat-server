@@ -1,4 +1,4 @@
-# chat-server
+# open-chat
 
 ### 系统需求
 
