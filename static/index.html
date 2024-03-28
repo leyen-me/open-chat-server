@@ -102,6 +102,10 @@
     <script>
       const { createApp, ref } = Vue;
 
+      function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+
       const app = createApp({
         setup() {
           const currentChatId = ref("");
@@ -128,7 +132,7 @@
           );
           const handleAdd = () => {
             currentChatId.value = "";
-            currentChatUrl.value = "./chat.html" + "?id=";
+            currentChatUrl.value = "./chat.html" + "?id=&t=" + String(Math.random());
           };
           const handleDeleteAll = () => {
             ElementPlus.ElMessageBox.confirm("确定全部清除吗?", "提示", {

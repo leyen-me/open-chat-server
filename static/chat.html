@@ -306,9 +306,18 @@
 
           const renderer = {
             code(code, language) {
-              return `<pre style="position: relative;" class="hljs ${language}"><code>${
-                hljs.highlightAuto(code).value
-              }</code><div class="copy" code-language="${language}" style="position: absolute;top: 12px;right: 12px;"><button class="copy-button" style="margin-right: 8px;" onclick="handleCodeCopy(this)">复制</button><button class="copy-button" onclick="handleRun(this)">运行</button></div></pre>`;
+              const html =
+                `<pre style="position: relative;" class="hljs ${language}">` +
+                `<code>${hljs.highlightAuto(code).value}</code>` +
+                `<div class="copy" code-language="${language}" style="position: absolute;top: 12px;right: 12px;">` +
+                `<button class="copy-button" onclick="handleCodeCopy(this)">复制</button>` +
+                `<button class="copy-button" onclick="handleRun(this)">测试</button>` +
+                (language === "python"
+                  ? `<button class="copy-button" onclick="handlePkg(this)">打包</button>`
+                  : "") +
+                `</div>` +
+                `</pre>`;
+              return html;
             },
           };
           marked.use({ renderer: renderer });
@@ -352,7 +361,10 @@
             }
             // 自动运行代码
             try {
-              const response = await fetchApi("/chat/code/auto/run/" + chatId.value, "POST");
+              const response = await fetchApi(
+                "/chat/code/auto/run/" + chatId.value,
+                "POST"
+              );
               getData(chatId.value);
             } catch (error) {}
           };

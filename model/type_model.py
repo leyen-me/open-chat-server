@@ -11,8 +11,8 @@ class TypeModel(BaseModel):
     user_id = Column(String(255), nullable=False, comment="这个GPT属于谁")
     name = Column(String(255), nullable=False, comment="模型名称")
     system_prompt = Column(String(1000), nullable=False, comment="系统提示词")
-    code_auto_run = Column(Integer, nullable=False,
-                           default=0, comment="代码是否自动运行")
+    question_prompt = Column(String(1000), comment="提问提示词")
+    code_auto_run = Column(Integer, nullable=False, default=0, comment="代码是否自动运行")
 
     def json(self):
         return {
@@ -24,5 +24,6 @@ class TypeModel(BaseModel):
             "user_id": self.user_id,
             "name": self.name,
             "system_prompt": self.system_prompt,
+            "question_prompt": self.question_prompt,
             "code_auto_run": self.code_auto_run,
         }

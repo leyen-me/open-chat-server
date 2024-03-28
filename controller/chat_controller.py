@@ -106,10 +106,18 @@ def get_context(chat_id, chat_type):
             "content": RESUME_SYSTEM_PROMPT,
         })
     for item in context_list:
-        messages.append({
-            "role": item.role,
-            "content": item.content,
-        })
+        if item.role == "user" and db_type.question_prompt != None:
+            content = db_type.question_prompt.format(item.content, item.content, item.content)
+            messages.append({
+                "role": item.role,
+                "content": content,
+            })
+            print("============>", content)
+        else:
+            messages.append({
+                "role": item.role,
+                "content": item.content,
+            })
     return messages
 
 

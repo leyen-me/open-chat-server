@@ -7,9 +7,9 @@ name: openai
 url:  https://platform.openai.com/api-keys
 proxy-url: https://api.openai-proxy.com/v1
 """
-API_KEY = os.getenv('OPENAI_API_KEY')
-BASE_URL = None
-BASE_MODEL = "gpt-3.5-turbo-1106"
+# API_KEY = os.getenv('OPENAI_API_KEY')
+# BASE_URL = None
+# BASE_MODEL = "gpt-3.5-turbo-1106"
 
 
 """
@@ -22,11 +22,12 @@ url:  https://platform.moonshot.cn/console/api-keys
 
 
 """
-name: mistral
-url:  https://ollama.com/library/mistral
+name: qwen:14b
+url:  https://ollama.com/library/qwen
 """
-# API_KEY = "sk-mistral"
-# BASE_URL = "http://localhost:11434/v1"
-# BASE_MODEL = "mistral"
+
+BASE_URL = "http://localhost:11434/v1"
+BASE_MODEL = "qwen2"
+API_KEY = BASE_MODEL
 
 base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)

@@ -50,4 +50,5 @@ li {
   color: inherit; /* 文字颜色继承自父元素 */
   font: inherit; /* 字体样式继承自父元素 */
   /* 其他需要重置的样式 */
+  margin-right: 8px;
 }

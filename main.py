@@ -1,62 +1,33 @@
+import time
 from flask import Flask, g
 from common import Result
 from controller import chat_controller, context_controller, type_controller
 from constants import HOST, PORT, DEBUG, UID, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ECHO, STATIC_FOLDER, base_db
 from constants import CHAT_SYSTEM_PROMPT, TRANSLATE_SYSTEM_PROMPT, MATPLOTLIB_SYSTEM_PROMPT, IOT_SYSTEM_PROMPT
 from model import TypeModel
+from prompts import prompts
 
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_ECHO'] = SQLALCHEMY_ECHO
 
+base_db.init_app(app)
 
-def db_init(app):
-    base_db.init_app(app)
+with app.app_context():
+    # 创建表
+    base_db.create_all()
 
-    with app.app_context():
-        # 创建表
-        base_db.create_all()
+    base_db.session.query(TypeModel).delete()
+    base_db.session.commit()
 
-        # 通用
-        default_model = base_db.session.query(TypeModel).filter(
-            TypeModel.code == "default").one_or_none()
-        if not default_model:
-            default_model = TypeModel(code="default", name="通用", user_id=UID,
-                                      system_prompt=CHAT_SYSTEM_PROMPT)
-            base_db.session.add(default_model)
-            base_db.session.commit()
-
-        # 翻译
-        translate_model = base_db.session.query(TypeModel).filter(
-            TypeModel.code == "translate").one_or_none()
-        if not translate_model:
-            translate_model = TypeModel(code="translate", name="翻译", user_id=UID,
-                                        system_prompt=TRANSLATE_SYSTEM_PROMPT)
-            base_db.session.add(translate_model)
-            base_db.session.commit()
-
-        # 数据分析
-        matplotlib_model = base_db.session.query(TypeModel).filter(
-            TypeModel.code == "matplotlib").one_or_none()
-        if not matplotlib_model:
-            matplotlib_model = TypeModel(code="matplotlib", name="数据分析", user_id=UID,
-                                         system_prompt=MATPLOTLIB_SYSTEM_PROMPT)
-            base_db.session.add(matplotlib_model)
-            base_db.session.commit()
-
-        # 物联网
-        # 读取寄存器数据，从0开始，30个数，串口为4，打印输出
-        iot_model = base_db.session.query(TypeModel).filter(
-            TypeModel.code == "iot").one_or_none()
-        if not iot_model:
-            iot_model = TypeModel(code="iot", name="物联网", user_id=UID,
-                                  system_prompt=IOT_SYSTEM_PROMPT, code_auto_run=1)
-            base_db.session.add(iot_model)
-            base_db.session.commit()
-
-
-db_init(app)
+    count = 0
+    for prompt in prompts:
+        model = TypeModel(code=prompt.code, name=prompt.name, user_id=UID,
+                          system_prompt=prompt.system_prompt, question_prompt=prompt.question_prompt, t=(time.time() * 1000 + count))
+        base_db.session.add(model)
+        count = count + 1
+    base_db.session.commit()
 
 
 @app.before_request
