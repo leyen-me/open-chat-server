@@ -8,12 +8,14 @@ from constants import ROUTE_WHITE_LIST, JWT_HEADER, JWT_SALT
 from model import TypeModel
 from prompts import prompts
 from utils import PathUtil
+from flask_cors import CORS
 
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_ECHO'] = SQLALCHEMY_ECHO
 
+CORS(app)
 base_db.init_app(app)
 
 with app.app_context():

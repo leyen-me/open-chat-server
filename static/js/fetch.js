@@ -13,7 +13,7 @@ async function fetchApi(url, method = "GET", data = null, headers = {}) {
   }
 
   try {
-    const response = await fetch(url, options);
+    const response = await fetch(window.REQUEST_URL + url, options);
     if (!response.ok) {
       throw new Error(`请检查你的网络或服务器连接: ${response.status}`);
     }
