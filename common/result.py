@@ -18,3 +18,11 @@ class Result:
             "data": None,
             "message": message
         })
+
+    @classmethod
+    def logout(cls):
+        return json.dumps({
+            "code": -2,
+            "data": None,
+            "message": "登录已失效"
+        })

@@ -1,6 +1,6 @@
 import os
 from openai import OpenAI
-
+from zhipuai import ZhipuAI
 
 """
 name: openai
@@ -26,8 +26,12 @@ name: qwen:14b
 url:  https://ollama.com/library/qwen
 """
 
-BASE_URL = "http://localhost:11434/v1"
-BASE_MODEL = "qwen2"
-API_KEY = BASE_MODEL
+# BASE_URL = "http://qwen.natapp1.cc/v1"
+# BASE_MODEL = "qwen:14b"
+# API_KEY = BASE_MODEL
 
-base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+# base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+
+API_KEY = os.getenv('ZHIPU_API_KEY')
+BASE_MODEL = 'glm-4'
+base_client = ZhipuAI(api_key=API_KEY)

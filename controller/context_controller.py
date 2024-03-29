@@ -1,4 +1,4 @@
-from flask import Blueprint as Controller
+from flask import Blueprint as Controller, request
 from model import ContextModel
 from common import Result
 from constants import base_db
@@ -23,3 +23,13 @@ def list_(chat_id):
             "create_time": str(item.create_time),
         })
     return Result.ok(data)
+
+
+@context_controller.route("/", methods=["POST"])
+def save_():
+    vo = request.json
+    model = ContextModel(
+        chat_id=vo['chat_id'], content=vo['content'], role=vo['role'], status=vo['status'])
+    base_db.session.add(model)
+    base_db.session.commit()
+    return Result.ok(model.id)

@@ -1,11 +1,13 @@
 import time
-from flask import Flask, g
+import jwt
+from flask import Flask, g, request
 from common import Result
-from controller import chat_controller, context_controller, type_controller
+from controller import chat_controller, context_controller, type_controller, user_controller
 from constants import HOST, PORT, DEBUG, UID, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ECHO, STATIC_FOLDER, base_db
-from constants import CHAT_SYSTEM_PROMPT, TRANSLATE_SYSTEM_PROMPT, MATPLOTLIB_SYSTEM_PROMPT, IOT_SYSTEM_PROMPT
+from constants import ROUTE_WHITE_LIST, JWT_HEADER, JWT_SALT
 from model import TypeModel
 from prompts import prompts
+from utils import PathUtil
 
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 
@@ -32,7 +34,24 @@ with app.app_context():
 
 @app.before_request
 def before():
-    g.uid = UID
+    # 跳过OPTIONS请求
+    if request.method == 'OPTIONS':
+        return
+    if PathUtil.is_path_allowed(request.path, ROUTE_WHITE_LIST):
+        return
+
+    authorization = request.headers.get("Authorization")
+    if authorization is None:
+        return Result.logout()
+    else:
+        # 校验JWT
+        try:
+            info = jwt.decode(authorization, JWT_SALT, verify=True,
+                              algorithms=JWT_HEADER["alg"])
+        except Exception as e:
+            return Result.logout()
+        # 校验数据库
+        g.uid = info["uid"]
 
 
 @app.errorhandler(Exception)
@@ -43,6 +62,7 @@ def exception(error_msg):
 app.register_blueprint(chat_controller)
 app.register_blueprint(context_controller)
 app.register_blueprint(type_controller)
+app.register_blueprint(user_controller)
 
 
 if __name__ == '__main__':

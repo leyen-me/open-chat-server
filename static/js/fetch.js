@@ -3,6 +3,7 @@ async function fetchApi(url, method = "GET", data = null, headers = {}) {
     method: method,
     headers: {
       "Content-Type": "application/json",
+      Authorization: Cookies.get("Authorization") || "",
       ...headers,
     },
   };
@@ -19,6 +20,8 @@ async function fetchApi(url, method = "GET", data = null, headers = {}) {
     const res = await response.json();
     if (res.code == 0) {
       return res;
+    } else if (res.code === -2) {
+      window.location.replace("/static/login.html");
     } else {
       throw new Error(res.message);
     }

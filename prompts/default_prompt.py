@@ -7,4 +7,4 @@ class DefaultPrompt(BasePrompt):
         super().__init__()
         self.name = "通用"
         self.code = "default"
-        self.system_prompt = "我想让你充当我的朋友，默认请使用中文与我沟通"
+        self.system_prompt = "默认请使用中文和Markdown格式与我沟通。我的第一句话是: 你好!"

@@ -1,7 +1,6 @@
 from enum import Enum
 from .base_client import base_client as base_client
 from .base_client import BASE_MODEL as BASE_MODEL
-from .base_prompt import *
 from .base_db import base_db as base_db
 
 
@@ -19,9 +18,19 @@ SQLALCHEMY_ECHO = True
 
 STATIC_FOLDER = "static"
 
+ROUTE_WHITE_LIST = ["/user/login", "/static/**"]
+
+JWT_HEADER = {
+    "alg": "HS256",
+    "typ": "JWT"
+}
+
+JWT_SALT = "asgfdgerhersasdq"
+
+
 class CHAT_TYPE(Enum):
     # 正常聊天
     NORMAL = "NORMAL"
-    
+
     # 总结
     RESUME = "RESUME"

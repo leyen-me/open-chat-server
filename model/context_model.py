@@ -6,7 +6,7 @@ from .base_model import BaseModel
 
 class ContextModel(BaseModel):
     __tablename__ = "t_context"
-
+    
     chat_id = Column(String(255), nullable=False, comment="聊天ID")
     content = Column(Text, comment="内容")
     role = Column(String(20), nullable=False, comment="角色")

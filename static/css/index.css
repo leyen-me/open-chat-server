@@ -1,7 +1,8 @@
 :root {
   --c-color-2: #999999;
   --el-border-radius-base: 0px !important;
-  --el-color-primary: #4f46e5 !important;
+  --el-color-primary: rgb(79, 70, 229) !important;
+  --el-color-primary-light-3: rgb(100, 92, 237) !important;
 }
 
 * {
@@ -21,7 +22,12 @@ body,
 
 .chat-active {
   background-color: #eee;
-  color: var(--el-color-primary) !important;
+  border: solid 1px var(--el-color-primary) !important;
+  /* color: var(--el-color-primary) !important; */
+}
+
+.chat-active:hover .chat-delete {
+  display: block !important;
 }
 
 ::-webkit-scrollbar {
@@ -51,4 +57,13 @@ li {
   font: inherit; /* 字体样式继承自父元素 */
   /* 其他需要重置的样式 */
   margin-right: 8px;
+}
+
+@media screen and (max-width: 1000px) {
+  .el-dialog {
+    width: 90%;
+  }
+  .menu-button {
+    display: flex !important;
+  }
 }

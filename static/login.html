@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-Cn">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录</title>
+
+    <link rel="stylesheet" href="css/element-plus.css" />
+    <link rel="stylesheet" href="css/index.css" />
+
+    <script src="js/vue.js"></script>
+    <script src="js/element-plus.js"></script>
+    <script src="js/element-plus-icon.js"></script>
+    <script src="js/js.cookie.min.js"></script>
+    <script src="js/fetch.js"></script>
+  </head>
+  <body>
+    <div
+      id="app"
+      style="display: flex; justify-content: center; align-items: center"
+    >
+      <el-form
+        ref="ruleFormRef"
+        style="max-width: 600px"
+        :model="ruleForm"
+        label-width="auto"
+        status-icon
+      >
+        <el-form-item label="email" prop="email">
+          <el-input v-model="ruleForm.email" type="email" />
+        </el-form-item>
+        <el-form-item label="login">
+          <el-button
+            :disabled="!ruleForm.email"
+            type="primary"
+            @click="handleLogin"
+            >登录</el-button
+          >
+        </el-form-item>
+      </el-form>
+    </div>
+    <script>
+      const { createApp, ref, reactive } = Vue;
+
+      const app = createApp({
+        setup() {
+          const ruleForm = reactive({
+            email: Cookies.get("Email") || "",
+          });
+
+          const handleLogin = async () => {
+            try {
+              const res = await fetchApi("/user/login", "POST", ruleForm);
+              Cookies.set("Authorization", res.data);
+              Cookies.set("Email", ruleForm.email);
+              window.location.replace("/static/index.html")
+            } catch (error) {
+              ElementPlus.ElMessage.error("登录失败");
+            }
+          };
+
+          return { ruleForm, handleLogin };
+        },
+      });
+      app.use(ElementPlus);
+      for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+        app.component(key, component);
+      }
+      app.mount("#app");
+    </script>
+  </body>
+</html>

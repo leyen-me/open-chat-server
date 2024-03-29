@@ -10,12 +10,15 @@
 
     <script src="js/vue.js"></script>
     <script src="js/element-plus.js"></script>
+    <script src="js/element-plus-icon.js"></script>
+    <script src="js/js.cookie.min.js"></script>
     <script src="js/fetch.js"></script>
   </head>
   <body>
     <div id="app" style="display: flex">
       <!-- 左侧布局 -->
       <div
+        class="nav"
         style="
           background-color: #fafafa;
           border-right: 1px solid rgba(0, 0, 0, 0.08);
@@ -24,49 +27,52 @@
           display: flex;
           flex-direction: column;
           padding-top: 16px;
+          transition: 0.35s all;
         "
+        :style="[showNav ? 'height:100%;opacity:1;' : 'height:0;opacity:0;',isMobile ? 'position: fixed;top: 0;left: 0;width: 100%;z-index: 999;border-right: none;overflow: hidden;padding:40px;':'height:100%;opacity:1;', isMobile ? (showNav? 'pointer-events: auto;':'pointer-events: none;') :'pointer-events: auto;']"
       >
         <!-- 按钮 -->
-        <div>
-          <div
-            style="
-              width: 92%;
-              margin: 0 auto;
-              margin-bottom: 8px;
-              padding: 12px;
-              display: flex;
-              justify-content: center;
-              cursor: pointer;
-              color: white;
-              background-color: var(--el-color-primary);
-              font-size: 14px;
-            "
+        <div
+          class="nav-close"
+          v-if="isMobile"
+          style="
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
+            padding-right: 20px;
+          "
+        >
+          <el-button text icon="Close" @click="showNav = !showNav"></el-button>
+        </div>
+        <div
+          style="
+            width: 92%;
+            display: flex;
+            margin: 0 auto;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+          "
+        >
+          <el-button
+            style="width: 100%; height: 44px"
+            type="primary"
             @click="handleAdd"
+            >新增聊天</el-button
           >
-            新增聊天
-          </div>
-          <div
-            style="
-              width: 92%;
-              margin: 0 auto;
-              margin-bottom: 8px;
-              padding: 12px;
-              display: flex;
-              justify-content: center;
-              cursor: pointer;
-              color: var(--c-color-2);
-              font-size: 14px;
-              border: var(--c-color-2) solid 1px;
-            "
+          <el-button
+            plain
+            style="width: 100%; height: 44px; margin-left: 0; margin-top: 4px"
+            type="danger"
             @click="handleDeleteAll"
+            >全部清除</el-button
           >
-            全部清除
-          </div>
         </div>
 
         <!-- 聊天列表 -->
-        <ul style="height: 0; flex: 1; overflow: auto">
+        <ul style="height: 0; flex: 1; overflow: auto; margin-top: 20px">
           <li
+            class="chat-item"
             @click="handleOpenChat(chat)"
             :class="{ 'chat-active': currentChatId === chat.id  }"
             style="
@@ -78,14 +84,47 @@
               display: flex;
               justify-content: space-between;
               cursor: pointer;
-              color: #666666;
               font-size: 14px;
+              position: relative;
+              border: solid 1px transparent;
             "
             v-for="chat in chatList"
           >
-            {{ chat.title }}
+            <el-text
+              truncated
+              style="
+                color: transparent;
+                background: linear-gradient(to left, transparent 8%, #333);
+                -webkit-background-clip: text;
+                background-clip: text;
+                transition: all 0.35s;
+              "
+              :style="[currentChatId === chat.id && 'background:linear-gradient(to left, transparent 8%, var(--el-color-primary));font-weight: 500;']"
+            >
+              {{ chat.title + chat.title }}
+            </el-text>
+            <el-button
+              class="chat-delete"
+              style="
+                display: none;
+                position: absolute;
+                right: 4px;
+                top: 50%;
+                transform: translateY(-50%);
+              "
+              link
+              icon="Delete"
+              circle
+              @click="handleDeleteChat(chat)"
+            ></el-button>
           </li>
         </ul>
+
+        <div style="width: 92%; margin: 0 auto; margin-bottom: 12px">
+          <el-button style="width: 100%; height: 40px" @click="handleLogout"
+            >退出登录</el-button
+          >
+        </div>
       </div>
 
       <!-- 右侧布局 -->
@@ -108,13 +147,24 @@
 
       const app = createApp({
         setup() {
+          const showNav = ref(false);
           const currentChatId = ref("");
           const currentChatUrl = ref("./chat.html");
           const chatList = ref([]);
+          const isMobile = ref(document.body.clientWidth < 1000);
+          const ro = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+              isMobile.value = entry.contentRect.width < 1000;
+            }
+          });
+          ro.observe(document.body);
+
           const handleOpenChat = (chat) => {
             currentChatId.value = chat.id;
             currentChatUrl.value = "./chat.html" + "?id=" + currentChatId.value;
+            showNav.value = false;
           };
+
           const getData = async (first_flag = false) => {
             try {
               const response = await fetchApi("/chat/list");
@@ -126,13 +176,24 @@
             async (event) => {
               if (event.source.location.pathname.includes("index.html")) return;
               await getData();
-              currentChatId.value = event.data;
+              switch (event.data.event) {
+                case "showNav":
+                  showNav.value = !showNav.value;
+                  break;
+                case "refresh":
+                  currentChatId.value = event.data.value;
+                  break;
+                default:
+                  break;
+              }
             },
             false
           );
           const handleAdd = () => {
             currentChatId.value = "";
-            currentChatUrl.value = "./chat.html" + "?id=&t=" + String(Math.random());
+            currentChatUrl.value =
+              "./chat.html" + "?id=&t=" + String(Math.random());
+            showNav.value = false;
           };
           const handleDeleteAll = () => {
             ElementPlus.ElMessageBox.confirm("确定全部清除吗?", "提示", {
@@ -150,6 +211,42 @@
               })
               .catch(() => {});
           };
+          const handleDeleteChat = (chat) => {
+            ElementPlus.ElMessageBox.confirm("确定要删除会话吗?", "提示", {
+              confirmButtonText: "确定",
+              cancelButtonText: "取消",
+              type: "warning",
+            })
+              .then(async () => {
+                try {
+                  const response = await fetchApi("/chat/" + chat.id, "DELETE");
+                  ElementPlus.ElMessage.success("删除成功");
+                  await getData();
+                  handleAdd();
+                } catch (error) {}
+              })
+              .catch(() => {});
+          };
+
+          const handleLogout = () => {
+            ElementPlus.ElMessageBox.confirm("确定要退出登录吗?", "提示", {
+              confirmButtonText: "确定",
+              cancelButtonText: "取消",
+              type: "warning",
+            })
+              .then(async () => {
+                Cookies.set("Authorization", "");
+                Cookies.set("Email", "");
+                ElementPlus.ElMessage.success({
+                  message: "退出成功",
+                  duration: 1000,
+                  onClose: () => {
+                    window.location.replace("/static/login.html");
+                  },
+                });
+              })
+              .catch(() => {});
+          };
 
           getData();
 
@@ -157,14 +254,21 @@
             currentChatId,
             currentChatUrl,
             chatList,
+            showNav,
+            isMobile,
 
             handleAdd,
             handleDeleteAll,
+            handleDeleteChat,
             handleOpenChat,
+            handleLogout,
           };
         },
       });
       app.use(ElementPlus);
+      for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+        app.component(key, component);
+      }
       app.mount("#app");
     </script>
   </body>

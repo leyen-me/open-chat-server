@@ -16,6 +16,7 @@
     <script src="js/marked.js"></script>
     <script src="js/jquery.js"></script>
     <script src="js/highlight.js"></script>
+    <script src="js/js.cookie.min.js"></script>
     <script src="js/fetch.js"></script>
   </head>
   <body>
@@ -23,11 +24,18 @@
       id="app"
       style="padding-bottom: 40px; display: flex; flex-direction: column"
     >
-      <div style="padding: 20px">
+      <div style="padding: 20px; display: flex; justify-content: space-between">
+        <el-button
+          style="width: 40px; height: 40px; display: none; font-size: 18px"
+          text
+          icon="Basketball"
+          class="menu-button"
+          @click="handleShowNav"
+        ></el-button>
         <el-button
           :disabled="messages.length > 0"
           @click="dialogGptsVisible = true"
-          size="large"
+          style="height: 40px"
           text
           >{{ typeName }}<arrow-down
             style="width: 1em; height: 1em; margin-left: 8px"
@@ -183,11 +191,13 @@
         </div>
       </el-dialog>
 
-      <el-dialog v-model="dialogGptsVisible" title="选择类型" width="800">
+      <el-dialog v-model="dialogGptsVisible" title="选择专家类型" width="800">
         <el-button
+          :type="typeCode===v.code ? 'primary':'default'"
           v-for="v,k in typeList"
           :key="v.id"
           @click="handleSelectType(v)"
+          style="margin-bottom: 10px; margin-left: 0; margin-right: 10px"
           >{{ v.name }}</el-button
         >
       </el-dialog>
@@ -271,6 +281,13 @@
           const typeCode = ref("");
           const dialogGptsVisible = ref(false);
 
+          const handleShowNav = () => {
+            window.parent.postMessage({
+              event: "showNav",
+              value: true,
+            });
+          };
+
           const typeName = computed(() => {
             const _type = typeList.value.find((t) => t.code === typeCode.value);
             if (_type) {
@@ -311,13 +328,16 @@
                 `<code>${hljs.highlightAuto(code).value}</code>` +
                 `<div class="copy" code-language="${language}" style="position: absolute;top: 12px;right: 12px;">` +
                 `<button class="copy-button" onclick="handleCodeCopy(this)">复制</button>` +
-                `<button class="copy-button" onclick="handleRun(this)">测试</button>` +
                 (language === "python"
-                  ? `<button class="copy-button" onclick="handlePkg(this)">打包</button>`
+                  ? `<button class="copy-button" onclick="handlePkgRun(this)">打包测试</button>`
                   : "") +
                 `</div>` +
                 `</pre>`;
               return html;
+            },
+            link(link, t, name) {
+              console.log(link, t, name);
+              return `<a href="${link}" target="_blank">${link}</a>`;
             },
           };
           marked.use({ renderer: renderer });
@@ -352,7 +372,6 @@
             const item = typeList.value.find(
               (item) => typeCode.value === item.code
             );
-            console.log("运行。。。。", item);
             if (!item) {
               return;
             }
@@ -379,10 +398,6 @@
             if (!prompt.value) {
               return;
             }
-
-            const _prompt = prompt.value;
-            prompt.value = "";
-
             const changeTitle = ref(false);
             if (!chatId.value) {
               const response = await fetchApi("/chat", "POST", {
@@ -391,30 +406,33 @@
               });
               chatId.value = response.data;
               changeTitle.value = true;
+              window.parent.postMessage({
+                event: "refresh",
+                value: chatId.value,
+              });
             }
+            const _prompt = prompt.value;
+            prompt.value = "";
             let stop = false;
+            loading.value = true;
+            const question_options = {
+              id: String(Math.random()),
+              role: "user",
+              content: _prompt,
+            };
+            messages.value.push(question_options);
+            const answer_options = {
+              id: String(Math.random()),
+              role: "assistant",
+              content: "",
+            };
+            messages.value.push(answer_options);
+            const answer = messages.value.find(
+              (context) => context.id == answer_options.id
+            );
+            scrollBottom();
 
             try {
-              // 临时
-              loading.value = true;
-              const question_options = {
-                id: "user",
-                role: "user",
-                content: _prompt,
-              };
-              messages.value.push(question_options);
-
-              const answer_options = {
-                id: "assistant",
-                role: "assistant",
-                content: "",
-              };
-              messages.value.push(answer_options);
-              const answer = messages.value.find(
-                (context) => context.id == answer_options.id
-              );
-              scrollBottom();
-
               // 真实
               const controller = new AbortController();
               const signal = controller.signal;
@@ -423,6 +441,7 @@
                 signal: signal,
                 headers: {
                   "Content-Type": "application/json",
+                  Authorization: Cookies.get("Authorization") || "",
                 },
                 body: JSON.stringify({
                   chat_id: chatId.value,
@@ -439,6 +458,7 @@
                   break;
                 }
                 if (!loading.value) {
+                  stop = true;
                   controller.abort();
                   break;
                 }
@@ -457,17 +477,34 @@
               ElementPlus.ElMessage.error("回答错误");
             } finally {
               loading.value = false;
+
+              // 主动停止，保存记录
+              if (stop) {
+                try {
+                  const response = await fetchApi("/context/", "POST", {
+                    chat_id: chatId.value,
+                    content: answer.content,
+                    role: answer.role,
+                    status: 0,
+                  });
+                } catch (error2) {
+                  console.log(error2);
+                }
+              }
+
               // 对话完成
               if (changeTitle.value) {
                 try {
                   const response = await fetchApi("/chat/resume", "POST", {
                     chat_id: chatId.value,
                   });
-                } catch (error2) {
-                  console.log("总结失败", error);
+                } catch (error3) {
                   ElementPlus.ElMessage.error("总结失败");
                 } finally {
-                  window.parent.postMessage(chatId.value);
+                  window.parent.postMessage({
+                    event: "refresh",
+                    value: chatId.value,
+                  });
                 }
               }
 
@@ -481,7 +518,7 @@
               // 临时
               loading.value = true;
               const answer_options = {
-                id: "assistant",
+                id: String(Math.random()),
                 role: "assistant",
                 content: "",
               };
@@ -499,6 +536,7 @@
                 signal: signal,
                 headers: {
                   "Content-Type": "application/json",
+                  Authorization: Cookies.get("Authorization") || "",
                 },
                 body: JSON.stringify({
                   chat_id: chatId.value,
@@ -514,6 +552,7 @@
                   break;
                 }
                 if (!loading.value) {
+                  stop = true;
                   controller.abort();
                   break;
                 }
@@ -533,6 +572,19 @@
               ElementPlus.ElMessage.error("回答错误");
             } finally {
               loading.value = false;
+
+              // 主动停止，保存记录
+              if (stop) {
+                try {
+                  const response = await fetchApi("/context/", "POST", {
+                    chat_id: chatId.value,
+                    content: answer.content,
+                    role: answer.role,
+                    status: 0,
+                  });
+                } catch (error2) {}
+              }
+
               getData(chatId.value);
             }
           };
@@ -564,6 +616,7 @@
             handleCopy,
             handleFixCode,
             handleSelectType,
+            handleShowNav,
           };
         },
       });

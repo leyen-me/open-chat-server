@@ -3,7 +3,7 @@ from io import StringIO
 import re
 import sys
 from flask import Blueprint as Controller, Response, request, g, stream_with_context
-from constants import base_client, BASE_MODEL, base_db, CHAT_SYSTEM_PROMPT, RESUME_SYSTEM_PROMPT, CHAT_TYPE
+from constants import base_client, BASE_MODEL, base_db, CHAT_TYPE
 from model import ChatModel, ContextModel, TypeModel
 from common import Result
 
@@ -14,20 +14,17 @@ chat_controller = Controller("chat", __name__, url_prefix='/chat')
 def save_():
     title = request.json["title"]
     type_code = request.json["type_code"]
-
     model = ChatModel(title=title, user_id=g.uid, type_code=type_code)
     base_db.session.add(model)
     base_db.session.commit()
     return Result.ok(model.id)
 
 
-@chat_controller.route("/", methods=["DELETE"])
-def delete_():
-    ids = request.json
-    chats_to_delete = base_db.session.query(
-        ChatModel).filter(ChatModel.id.in_(ids)).all()
-    for chat in chats_to_delete:
-        base_db.session.delete(chat)
+@chat_controller.route("/<string:id>", methods=["DELETE"])
+def delete_(id):
+    base_db.session.query(ContextModel).filter(
+        ContextModel.chat_id == id).delete()
+    base_db.session.query(ChatModel).filter(ChatModel.id == id).delete()
     base_db.session.commit()
     return Result.ok()
 
@@ -36,10 +33,10 @@ def delete_():
 def delete_all_():
     ids = [chat.id for chat in base_db.session.query(
         ChatModel).filter(ChatModel.user_id == g.uid).all()]
-    chats_to_delete = base_db.session.query(
-        ChatModel).filter(ChatModel.id.in_(ids)).all()
-    for chat in chats_to_delete:
-        base_db.session.delete(chat)
+    base_db.session.query(ChatModel).filter(
+        ChatModel.user_id == g.uid).delete()
+    base_db.session.query(ContextModel).filter(
+        ContextModel.chat_id.in_(ids)).delete()
     base_db.session.commit()
     return Result.ok()
 
@@ -101,18 +98,15 @@ def get_context(chat_id, chat_type):
             "content": db_type.system_prompt,
         })
     elif chat_type == CHAT_TYPE.RESUME:
-        messages.append({
-            "role": "system",
-            "content": RESUME_SYSTEM_PROMPT,
-        })
+        pass
     for item in context_list:
         if item.role == "user" and db_type.question_prompt != None:
-            content = db_type.question_prompt.format(item.content, item.content, item.content)
+            content = db_type.question_prompt.format(
+                item.content, item.content, item.content)
             messages.append({
                 "role": item.role,
                 "content": content,
             })
-            print("============>", content)
         else:
             messages.append({
                 "role": item.role,
@@ -150,13 +144,19 @@ def resume_():
     """
     chat_id = request.json["chat_id"]
     messages = get_context(chat_id, CHAT_TYPE.RESUME)
+    messages.append({
+        "role": "user",
+        "content": "请使用中文给上述对话起一个 15 个字以内的标题, 不要任何注释",
+    })
     response = base_client.chat.completions.create(
         model=BASE_MODEL,
         messages=messages
     )
     model = base_db.session.query(ChatModel).filter(
         ChatModel.id == chat_id).one()
-    model.title = response.choices[0].message.content
+
+    title = response.choices[0].message.content
+    model.title = title.replace('"', '')
     base_db.session.commit()
     return Result.ok()
 
@@ -204,7 +204,7 @@ def code_auto_run_(chat_id):
             chat_id=chat_id, content=res, role="assistant", status=1, tool_name="", tool_parameters=None)
         base_db.session.add(assistant_context)
         base_db.session.commit()
-    
+
     return Result.ok()
 
 
