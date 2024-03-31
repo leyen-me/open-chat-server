@@ -146,11 +146,36 @@
         return Math.floor(Math.random() * (max - min + 1)) + min;
       }
 
+      function getChatId() {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const paramValue = urlParams.get("paramName");
+        const id = urlParams.get("id");
+        return id;
+      }
+
+      function updateURL(queryParams) {
+        const currentURL = new URL(window.location.href);
+        const urlSearchParams = new URLSearchParams(currentURL.search);
+        for (const [key, value] of Object.entries(queryParams)) {
+          if (value === undefined || value === null) {
+            urlSearchParams.delete(key);
+          } else {
+            urlSearchParams.set(key, value);
+          }
+        }
+        const newSearch = urlSearchParams.toString();
+        const newURL = newSearch
+          ? `${currentURL.pathname}?${newSearch}`
+          : currentURL.pathname;
+        window.history.pushState({}, "", newURL);
+      }
+
       const app = createApp({
         setup() {
           const showNav = ref(false);
-          const currentChatId = ref("");
-          const currentChatUrl = ref("./chat.html");
+          const currentChatId = ref(getChatId());
+          const currentChatUrl = ref("./chat.html" + "?id=" + currentChatId.value);
           const chatList = ref([]);
           const isMobile = ref(document.body.clientWidth < 1000);
           const ro = new ResizeObserver((entries) => {
@@ -163,6 +188,9 @@
           const handleOpenChat = (chat) => {
             currentChatId.value = chat.id;
             currentChatUrl.value = "./chat.html" + "?id=" + currentChatId.value;
+            updateURL({
+              id: currentChatId.value,
+            });
             showNav.value = false;
           };
 
@@ -183,6 +211,9 @@
                   break;
                 case "refresh":
                   currentChatId.value = event.data.value;
+                  updateURL({
+                    id: currentChatId.value,
+                  });
                   break;
                 default:
                   break;
@@ -194,6 +225,9 @@
             currentChatId.value = "";
             currentChatUrl.value =
               "./chat.html" + "?id=&t=" + String(Math.random());
+            updateURL({
+              id: null,
+            });
             showNav.value = false;
           };
           const handleDeleteAll = () => {

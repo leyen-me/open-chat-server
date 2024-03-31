@@ -22,13 +22,13 @@
     >
       <el-form
         ref="ruleFormRef"
-        style="max-width: 600px"
+        style="max-width: 700px"
         :model="ruleForm"
         label-width="auto"
         status-icon
       >
         <el-form-item label="email" prop="email">
-          <el-input v-model="ruleForm.email" type="email" />
+          <el-input v-model="ruleForm.email" type="email" placeholder="输入邮箱或其他，自动注册" style="width: 300px;" />
         </el-form-item>
         <el-form-item label="login">
           <el-button

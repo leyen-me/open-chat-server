@@ -33,7 +33,7 @@ def login():
 
 @user_controller.route("/info", methods=["GET"])
 def info():
-    return Result.ok(data=g.info)
+    return Result.ok(data=g.uid)
 
 
 @user_controller.route("/", methods=["GET"])

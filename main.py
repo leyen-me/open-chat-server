@@ -60,12 +60,10 @@ def before():
 def exception(error_msg):
     return Result.error(str(error_msg))
 
-
+app.register_blueprint(user_controller)
 app.register_blueprint(chat_controller)
 app.register_blueprint(context_controller)
 app.register_blueprint(type_controller)
-app.register_blueprint(user_controller)
-
 
 if __name__ == '__main__':
     app.run(host=HOST, port=PORT, debug=DEBUG)
