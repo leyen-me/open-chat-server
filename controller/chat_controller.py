@@ -1,8 +1,9 @@
 import contextlib
 from io import StringIO
+import os
 import re
 import sys
-from flask import Blueprint as Controller, Response, request, g, stream_with_context
+from flask import Blueprint as Controller, Response, make_response, request, g, send_file, stream_with_context
 from constants import base_client, BASE_MODEL, base_db, CHAT_TYPE
 from model import ChatModel, ContextModel, TypeModel
 from common import Result
@@ -237,6 +238,43 @@ def code_run_():
                 return Result.error(str(e))
         return Result.ok(s.getvalue())
     return Result.ok()
+
+
+@chat_controller.route("/code/pkg", methods=["POST"])
+def code_pkg_():
+    """
+    运行代码
+    """
+    code = request.json["code"]
+
+    # 生成文件
+    import subprocess
+    from uuid import uuid4
+
+    # 执行命令并获取输出
+    result1 = subprocess.run(
+        ['cd', 'C:\\Users\\67222\\Desktop\\project\\open-chat-server'], check=True, shell=True, encoding='utf-8')
+    result2 = subprocess.run(
+        ['venv\\Scripts\\activate'], check=True, shell=True, encoding='utf-8')
+
+    # 生成文件
+    file_name = str(uuid4())
+    file_path = './dist/' + file_name + '.py'
+    with open(file_path, 'w+', encoding='utf-8') as file:
+        # 写入文件内容
+        file.write(code)
+    result3 = subprocess.run(
+        ['pyinstaller', '-F', file_path], check=True, shell=True, encoding='utf-8')
+    return Result.ok(file_name)
+
+
+@chat_controller.route("/code/pkg/download/", methods=["POST"])
+def code_pkg_download_():
+    file_name = request.json["file_name"]
+    file_path = os.path.join(os.getcwd(), "dist", file_name + ".exe")
+    response = make_response(send_file(file_path, as_attachment=True))
+    response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition'
+    return response
 
 
 @chat_controller.route("/stream", methods=["POST"])
