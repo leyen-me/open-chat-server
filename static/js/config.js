@@ -1,1 +1,0 @@
-window.REQUEST_URL = "http://192.168.31.227:8080"
