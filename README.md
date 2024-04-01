@@ -1,6 +1,6 @@
-# open-chat
+# open-chat-server
 
-open-chat是一款开源的AI对话框架，你可以用它聊天，解决问题。
+open-chat-server是一款开源的AI对话框架，你可以用它聊天，解决问题。
 
 专业类方向，翻译等任务，你可以很方便的定制你的GPTS。
 
