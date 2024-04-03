@@ -256,24 +256,17 @@ def code_pkg_():
     code = request.json["code"]
 
     def generate():
-        yield "切换工作目录"
-        # 切换到工作目录
-        subprocess.run(
-            ['cd', os.path.join(os.getcwd())], check=True, shell=True, encoding='utf-8')
-
-        yield "激活Python"
-        # 激活Python
-        subprocess.run(
-            ['venv\\Scripts\\activate'], check=True, shell=True, encoding='utf-8')
-
-        yield "生成源代码文件..."
-        # 生成源代码文件
+        import platform
         file_name = str(uuid4())
-        spec_path = './' + file_name + '.spec'
-        build_path = './build/' + file_name + '/'
-        file_path = './dist/' + file_name + '.py'
-        zip_path = './dist/' + file_name + '.zip'
-        exe_path = './dist/' + file_name + '.exe'
+        spec_path = os.path.join(os.getcwd(), file_name + ".spec")
+        build_path = os.path.join(os.getcwd(), "build", file_name)
+        file_path = os.path.join(os.getcwd(), "dist", file_name + ".py")
+        zip_path = os.path.join(os.getcwd(), "dist", file_name + ".zip")
+        if platform.system() == 'Linux':
+            exe_path = os.path.join(os.getcwd(), "dist", file_name)
+        elif platform.system() == 'Windows':
+            exe_path = os.path.join(os.getcwd(), "dist", file_name + ".exe")
+
         with open(file_path, 'w+', encoding='utf-8') as file:
             file.write(code + "\n" + 'input("按任意键退出...")')
 

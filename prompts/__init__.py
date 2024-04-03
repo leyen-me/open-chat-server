@@ -6,6 +6,7 @@ from .vue_interviewer_prompt import VueInterviewerPrompt
 from .java_interviewer_prompt import JavaInterviewerPrompt
 from .china_tourism_prompt import ChinaTourismPrompt
 from .compiler_teacher_prompt import CompilerTeacherPrompt
+from .test_prompt import TestPrompt
 
 prompts = [
     DefaultPrompt(),
@@ -16,4 +17,5 @@ prompts = [
     JavaInterviewerPrompt(),
     ChinaTourismPrompt(),
     CompilerTeacherPrompt(),
+    TestPrompt(),
 ]

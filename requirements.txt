@@ -1,3 +1,4 @@
+altgraph==0.17.4
 annotated-types==0.6.0
 anyio==4.3.0
 blinker==1.7.0
@@ -32,17 +33,21 @@ numpy==1.24.4
 openai==1.14.2
 packaging==24.0
 pandas==2.0.3
+pefile==2023.2.7
 pillow==10.2.0
 pycparser==2.21
 pydantic==2.6.4
 pydantic-core==2.16.3
+pyinstaller==6.5.0
+pyinstaller-hooks-contrib==2024.3
 PyJWT==2.8.0
-pymodbus==3.4.1
+pymodbus==2.5.3
 PyMySQL==1.1.0
 pyparsing==3.1.2
 pyserial==3.5
 python-dateutil==2.9.0.post0
 pytz==2024.1
+pywin32-ctypes==0.2.2
 regex==2023.12.25
 requests==2.31.0
 six==1.16.0
