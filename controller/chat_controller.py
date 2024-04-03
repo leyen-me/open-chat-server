@@ -3,10 +3,13 @@ from io import StringIO
 import os
 import re
 import sys
+import subprocess
+from uuid import uuid4
 from flask import Blueprint as Controller, Response, make_response, request, g, send_file, stream_with_context
 from constants import base_client, BASE_MODEL, base_db, CHAT_TYPE
 from model import ChatModel, ContextModel, TypeModel
 from common import Result
+from utils import FileUtil
 
 chat_controller = Controller("chat", __name__, url_prefix='/chat')
 
@@ -100,6 +103,11 @@ def get_context(chat_id, chat_type):
         })
     elif chat_type == CHAT_TYPE.RESUME:
         pass
+
+    if db_type.context_length != None:
+        context_list = context_list[-1 * db_type.context_length:]
+        print("上下文", [c.id for c in context_list])
+
     for item in context_list:
         if item.role == "user" and db_type.question_prompt != None:
             content = db_type.question_prompt.format(
@@ -247,31 +255,55 @@ def code_pkg_():
     """
     code = request.json["code"]
 
-    # 生成文件
-    import subprocess
-    from uuid import uuid4
+    def generate():
+        yield "切换工作目录"
+        # 切换到工作目录
+        subprocess.run(
+            ['cd', os.path.join(os.getcwd())], check=True, shell=True, encoding='utf-8')
 
-    # 执行命令并获取输出
-    result1 = subprocess.run(
-        ['cd', 'C:\\Users\\67222\\Desktop\\project\\open-chat-server'], check=True, shell=True, encoding='utf-8')
-    result2 = subprocess.run(
-        ['venv\\Scripts\\activate'], check=True, shell=True, encoding='utf-8')
+        yield "激活Python"
+        # 激活Python
+        subprocess.run(
+            ['venv\\Scripts\\activate'], check=True, shell=True, encoding='utf-8')
 
-    # 生成文件
-    file_name = str(uuid4())
-    file_path = './dist/' + file_name + '.py'
-    with open(file_path, 'w+', encoding='utf-8') as file:
-        # 写入文件内容
-        file.write(code)
-    result3 = subprocess.run(
-        ['pyinstaller', '-F', file_path], check=True, shell=True, encoding='utf-8')
-    return Result.ok(file_name)
+        yield "生成源代码文件..."
+        # 生成源代码文件
+        file_name = str(uuid4())
+        spec_path = './' + file_name + '.spec'
+        build_path = './build/' + file_name + '/'
+        file_path = './dist/' + file_name + '.py'
+        zip_path = './dist/' + file_name + '.zip'
+        exe_path = './dist/' + file_name + '.exe'
+        with open(file_path, 'w+', encoding='utf-8') as file:
+            file.write(code + "\n" + 'input("按任意键退出...")')
+
+        yield "正在生成二进制安装包..."
+        # 生成二进制安装包
+        subprocess.run(
+            ['pyinstaller', '-F', file_path], check=True, shell=True, encoding='utf-8')
+
+        yield "压缩中..."
+        FileUtil.zip(exe_path, zip_path)
+
+        yield "清除缓存"
+        # 删除源代码
+        FileUtil.delete_file(file_path)
+        # 删除安装包
+        FileUtil.delete_file(exe_path)
+        # 删除spec
+        FileUtil.delete_file(spec_path)
+        # 删除构建缓存目录
+        FileUtil.delete_dir(build_path)
+
+        yield "文件生成成功:" + file_name
+
+    return Response(stream_with_context(generate()))
 
 
 @chat_controller.route("/code/pkg/download/", methods=["POST"])
 def code_pkg_download_():
     file_name = request.json["file_name"]
-    file_path = os.path.join(os.getcwd(), "dist", file_name + ".exe")
+    file_path = os.path.join(os.getcwd(), "dist", file_name + ".zip")
     response = make_response(send_file(file_path, as_attachment=True))
     response.headers['Access-Control-Expose-Headers'] = 'Content-Disposition'
     return response

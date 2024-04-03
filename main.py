@@ -28,7 +28,7 @@ with app.app_context():
     count = 0
     for prompt in prompts:
         model = TypeModel(code=prompt.code, name=prompt.name, user_id=UID,
-                          system_prompt=prompt.system_prompt, question_prompt=prompt.question_prompt, t=(time.time() * 1000 + count))
+                          system_prompt=prompt.system_prompt, context_length=prompt.context_length, question_prompt=prompt.question_prompt, t=(time.time() * 1000 + count))
         base_db.session.add(model)
         count = count + 1
     base_db.session.commit()

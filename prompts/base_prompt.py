@@ -14,3 +14,4 @@ class BasePrompt:
         self.system_prompt = ""
         self.question_prompt = None
         self.code_auto_run = 0
+        self.context_length = None

@@ -5,6 +5,7 @@ from .iot_prompt import IotPrompt
 from .vue_interviewer_prompt import VueInterviewerPrompt
 from .java_interviewer_prompt import JavaInterviewerPrompt
 from .china_tourism_prompt import ChinaTourismPrompt
+from .compiler_teacher_prompt import CompilerTeacherPrompt
 
 prompts = [
     DefaultPrompt(),
@@ -14,4 +15,5 @@ prompts = [
     VueInterviewerPrompt(),
     JavaInterviewerPrompt(),
     ChinaTourismPrompt(),
+    CompilerTeacherPrompt(),
 ]

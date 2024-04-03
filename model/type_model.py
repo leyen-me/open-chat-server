@@ -13,6 +13,7 @@ class TypeModel(BaseModel):
     system_prompt = Column(String(1000), nullable=False, comment="系统提示词")
     question_prompt = Column(String(1000), comment="提问提示词")
     code_auto_run = Column(Integer, nullable=False, default=0, comment="代码是否自动运行")
+    context_length = Column(Integer, comment="上下文长度")
 
     def json(self):
         return {
@@ -26,4 +27,5 @@ class TypeModel(BaseModel):
             "system_prompt": self.system_prompt,
             "question_prompt": self.question_prompt,
             "code_auto_run": self.code_auto_run,
+            "context_length": self.context_length,
         }
