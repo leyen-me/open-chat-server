@@ -302,6 +302,76 @@ def code_pkg_download_():
     return response
 
 
+def get_stream_response(chat_id, messages):
+    stream_response = None
+    # 开始询问
+    try:
+        stream_response = base_client.chat.completions.create(
+            model=BASE_MODEL,
+            messages=messages,
+            stream=True
+        )
+    except Exception as e:
+        pattern = r'max_tokens'
+        match = re.search(pattern, str(e))
+        if match:
+            # 1号位置不动，删除前10个对话
+            length = len(messages)
+            middle_index = length // 2
+            messages = messages[middle_index:]
+            return get_stream_response(chat_id, messages)
+    
+    return stream_response
+
+def get_stream_response_2(chat_id, messages):
+
+    stream_response = get_stream_response(chat_id, messages)
+
+    def generate(messages):
+        anwser = ""
+        for trunk in stream_response:
+            finish = trunk.choices[0].finish_reason
+            content = trunk.choices[0].delta.content
+            if finish == None:
+                if content != None:
+                    anwser += content
+                    yield content
+            elif finish == 'length':
+                # 回答问题时，超出上下文。
+                length = len(messages)
+                middle_index = length // 2
+                messages = messages[middle_index:]
+
+                stream_response_2 = get_stream_response(chat_id, messages)
+                anwser = ""
+                yield "<br>================><br>"
+                for trunk2 in stream_response_2:
+                    finish2 = trunk2.choices[0].finish_reason
+                    content2 = trunk2.choices[0].delta.content
+                    print("==================>", finish2, type(finish2))
+                    if finish2 == None:
+                        if content2 != None:
+                            anwser += content2
+                            yield content2
+                    elif finish2 == "stop":
+                        # 保存回答
+                        save_anwser(chat_id, anwser)
+                        yield ""
+                break
+            elif finish == "stop":
+                # 保存回答
+                save_anwser(chat_id, anwser)
+                yield ""
+                break
+            else:
+                print("未知异常", finish)
+                pass
+                break
+
+    return Response(stream_with_context(generate(messages)))
+
+
+
 @chat_controller.route("/stream", methods=["POST"])
 def stream_():
     """
@@ -312,31 +382,8 @@ def stream_():
 
     # 保存用户提问
     save_question(chat_id, question)
-
-    # 获取上下文
     messages = get_context(chat_id, CHAT_TYPE.NORMAL)
-
-    # 开始询问
-    stream_response = base_client.chat.completions.create(
-        model=BASE_MODEL,
-        messages=messages,
-        stream=True
-    )
-
-    def generate():
-        anwser = ""
-        for trunk in stream_response:
-            content = trunk.choices[0].delta.content
-            if trunk.choices[0].finish_reason != 'stop':
-                anwser += content
-                yield content
-            else:
-                # 保存回答
-                save_anwser(chat_id, anwser)
-                yield ""
-
-    return Response(stream_with_context(generate()))
-
+    return get_stream_response_2(chat_id, messages)
 
 @chat_controller.route("/re/stream", methods=["POST"])
 def re_stream_():
@@ -354,27 +401,6 @@ def re_stream_():
         if last_context.role == "assistant":
             base_db.session.delete(last_context)
             base_db.session.commit()
-
-    # 获取上下文
+    
     messages = get_context(chat_id, CHAT_TYPE.NORMAL)
-
-    # 开始询问
-    stream_response = base_client.chat.completions.create(
-        model=BASE_MODEL,
-        messages=messages,
-        stream=True
-    )
-
-    def generate():
-        anwser = ""
-        for trunk in stream_response:
-            content = trunk.choices[0].delta.content
-            if trunk.choices[0].finish_reason != 'stop':
-                anwser += content
-                yield content
-            else:
-                # 保存回答
-                save_anwser(chat_id, anwser)
-                yield ""
-
-    return Response(stream_with_context(generate()))
+    return get_stream_response_2(chat_id, messages)

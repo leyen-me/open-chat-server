@@ -29,9 +29,9 @@ name: ollama
 url: https://ollama.com/library/qwen
 base-url: http://localhost:11434/v1
 """
-# BASE_URL = "http://localhost:11434/v1"
-# BASE_MODEL = "qwen:14b"
-# API_KEY = BASE_MODEL
+BASE_URL = "http://localhost:8000/v1"
+BASE_MODEL = "/home/lgy/model/Qwen1___5-14B-Chat-GPTQ-Int4"
+API_KEY = BASE_MODEL
 
 
 """
@@ -39,12 +39,12 @@ name: zhipu
 url: https://open.bigmodel.cn/usercenter/apikeys
 base-url: https://open.bigmodel.cn/api/paas/v4
 """
-API_KEY = os.getenv('ZHIPU_API_KEY')
-BASE_MODEL = 'glm-4'
+# API_KEY = os.getenv('ZHIPU_API_KEY')
+# BASE_MODEL = 'glm-4'
 
 
 ###############################CLIENT###############################
 
-# base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
-base_client = ZhipuAI(api_key=API_KEY)
+# base_client = ZhipuAI(api_key=API_KEY)
