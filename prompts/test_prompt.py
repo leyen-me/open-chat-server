@@ -8,5 +8,4 @@ class TestPrompt(BasePrompt):
         self.name = "测试"
         self.code = "test"
         self.system_prompt = """
-        test
         """

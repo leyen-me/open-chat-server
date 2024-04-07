@@ -29,7 +29,7 @@ name: ollama
 url: https://ollama.com/library/qwen
 base-url: http://localhost:11434/v1
 """
-BASE_URL = "http://localhost:8000/v1"
+BASE_URL = "http://qwen.natapp1.cc/v1"
 BASE_MODEL = "/home/lgy/model/Qwen1___5-14B-Chat-GPTQ-Int4"
 API_KEY = BASE_MODEL
 
