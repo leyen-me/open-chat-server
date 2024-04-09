@@ -29,9 +29,9 @@ name: ollama
 url: https://ollama.com/library/qwen
 base-url: http://localhost:11434/v1
 """
-BASE_URL = "http://qwen.natapp1.cc/v1"
-BASE_MODEL = "/home/lgy/model/Qwen1___5-14B-Chat-GPTQ-Int4"
-API_KEY = BASE_MODEL
+# BASE_URL = "http://qwen.natapp1.cc/v1"
+# BASE_MODEL = "/home/lgy/model/Qwen1___5-14B-Chat-GPTQ-Int4"
+# API_KEY = BASE_MODEL
 
 
 """
@@ -43,8 +43,18 @@ base-url: https://open.bigmodel.cn/api/paas/v4
 # BASE_MODEL = 'glm-4'
 
 
+"""
+name: InternLM
+url: https://github.com/InternLM/lmdeploy/blob/main/README_zh-CN.md
+base-url: http://127.0.0.1/v1
+"""
+API_KEY = "EMPTY"
+BASE_URL = 'http://qwen.natapp1.cc/v1'
+base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+BASE_MODEL = base_client.models.list().data[0].id
+
+
 ###############################CLIENT###############################
 
-base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-
+# base_client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 # base_client = ZhipuAI(api_key=API_KEY)

@@ -18,7 +18,7 @@ SQLALCHEMY_ECHO = True
 
 STATIC_FOLDER = "static"
 
-ROUTE_WHITE_LIST = ["/user/login", "/static/**"]
+ROUTE_WHITE_LIST = ["/user/login", "/static/**", "/image/**"]
 
 JWT_HEADER = {
     "alg": "HS256",
@@ -27,6 +27,12 @@ JWT_HEADER = {
 
 JWT_SALT = "asgfdgerhersasdq"
 
+class CHAT_ROLES(Enum):
+    SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
+    PLUGIN = "assistant"
+    FUNCTION = "function"
 
 class CHAT_TYPE(Enum):
     # 正常聊天

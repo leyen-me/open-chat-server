@@ -1,3 +1,4 @@
+import time
 import contextlib
 from io import StringIO
 import os
@@ -6,10 +7,11 @@ import sys
 import subprocess
 from uuid import uuid4
 from flask import Blueprint as Controller, Response, make_response, request, g, send_file, stream_with_context
-from constants import base_client, BASE_MODEL, base_db, CHAT_TYPE
+from constants import base_db, CHAT_TYPE
 from model import ChatModel, ContextModel, TypeModel
 from common import Result
 from utils import FileUtil
+from agents import *
 
 chat_controller = Controller("chat", __name__, url_prefix='/chat')
 
@@ -84,43 +86,18 @@ def chat_list_():
     return Result.ok(data)
 
 
-def get_context(chat_id, chat_type):
+def get_context(chat_id):
     """
     聊天时:获取上下文
     """
     messages = []
-    db_chat = base_db.session.query(ChatModel).filter(
-        ChatModel.id == chat_id).one()
-    db_type = base_db.session.query(TypeModel).filter(
-        TypeModel.code == db_chat.type_code).one()
     context_list = base_db.session.query(ContextModel).filter(
         ContextModel.chat_id == chat_id, ContextModel.status == 1).order_by(ContextModel.t.asc()).all()
-
-    if chat_type == CHAT_TYPE.NORMAL:
-        messages.append({
-            "role": "system",
-            "content": db_type.system_prompt,
-        })
-    elif chat_type == CHAT_TYPE.RESUME:
-        pass
-
-    if db_type.context_length != None:
-        context_list = context_list[-1 * db_type.context_length:]
-        print("上下文", [c.id for c in context_list])
-
     for item in context_list:
-        if item.role == "user" and db_type.question_prompt != None:
-            content = db_type.question_prompt.format(
-                item.content, item.content, item.content)
-            messages.append({
-                "role": item.role,
-                "content": content,
-            })
-        else:
-            messages.append({
-                "role": item.role,
-                "content": item.content,
-            })
+        messages.append({
+            "role": item.role,
+            "content": item.content,
+        })
     return messages
 
 
@@ -130,41 +107,32 @@ def save_question(chat_id, question):
     """
     if question != "":
         user_context = ContextModel(
-            chat_id=chat_id, content=question, role="user", status=1, tool_name="", tool_parameters=None)
+            chat_id=chat_id, content=question, role="user", status=1, tool_name=None, tool_parameters=None)
         base_db.session.add(user_context)
         base_db.session.commit()
 
 
-def save_anwser(chat_id, anwser):
+def save_anwser(chat_id, anwser, execution_time):
     """
     保存回答
     """
     if anwser != "":
         assistant_context = ContextModel(
-            chat_id=chat_id, content=anwser, role="assistant", status=1, tool_name="", tool_parameters=None)
+            chat_id=chat_id, content=anwser, role="assistant", status=1, tool_name="", tool_parameters=None, execution_time=execution_time)
         base_db.session.add(assistant_context)
         base_db.session.commit()
 
 
 @chat_controller.route("/resume", methods=["POST"])
 def resume_():
-    """
-    总结对话
-    """
     chat_id = request.json["chat_id"]
-    messages = get_context(chat_id, CHAT_TYPE.RESUME)
-    messages.append({
-        "role": "user",
-        "content": "请使用中文给上述对话起一个 15 个字以内的标题, 不要任何注释",
-    })
-    response = base_client.chat.completions.create(
-        model=BASE_MODEL,
-        messages=messages
-    )
+    messages = get_context(chat_id)
+    agent = ResumeAgent()
+    for responses in agent.run(messages=messages):
+        pass
     model = base_db.session.query(ChatModel).filter(
         ChatModel.id == chat_id).one()
-
-    title = response.choices[0].message.content
+    title = messages[-1].get('content', '')
     model.title = title.replace('"', '')
     base_db.session.commit()
     return Result.ok()
@@ -217,41 +185,10 @@ def code_auto_run_(chat_id):
     return Result.ok()
 
 
-@chat_controller.route("/code/run", methods=["POST"])
-def code_run_():
-    """
-    运行代码
-    """
-    language = request.json["language"]
-    code = request.json["code"]
-
-    @contextlib.contextmanager
-    def stdoutIO(stdout=None):
-        old = sys.stdout
-        if stdout is None:
-            stdout = StringIO()
-        sys.stdout = stdout
-        yield stdout
-        sys.stdout = old
-
-    if not language == "python":
-        pass
-    else:
-        with stdoutIO() as s:
-            try:
-                import matplotlib
-                matplotlib.use('agg')
-                exec(code)
-            except Exception as e:
-                return Result.error(str(e))
-        return Result.ok(s.getvalue())
-    return Result.ok()
-
-
 @chat_controller.route("/code/pkg", methods=["POST"])
 def code_pkg_():
     """
-    运行代码
+    打包代码
     """
     code = request.json["code"]
 
@@ -302,38 +239,59 @@ def code_pkg_download_():
     return response
 
 
-def get_stream_response(chat_id, messages):
+def get_stream_response(chat_id):
+    messages = []
+    db_chat = base_db.session.query(ChatModel).filter(
+        ChatModel.id == chat_id).one()
+    db_type = base_db.session.query(TypeModel).filter(
+        TypeModel.code == db_chat.type_code).one()
+    context_list = base_db.session.query(ContextModel).filter(
+        ContextModel.chat_id == chat_id, ContextModel.status == 1).order_by(ContextModel.t.asc()).all()
 
-    stream_response = base_client.chat.completions.create(
-        model=BASE_MODEL,
-        messages=messages,
-        stream=True
-    )
+    for item in context_list:
+        messages.append({
+            "role": item.role,
+            "content": item.content,
+        })
+
+    start_time = time.perf_counter()
 
     def generate():
-        anwser = ""
-        for trunk in stream_response:
-            finish = trunk.choices[0].finish_reason
-            content = trunk.choices[0].delta.content
-            if finish == None:
-                if content != None:
-                    anwser += content
-                    yield content
-            elif finish == 'length':
-                content = "<br>回答错误:本次对话超出模型最大上下文，您可以使用新增聊天，重新输入问题来解决上下文问题。<br>"
-                anwser += content
-                yield content
-                save_anwser(chat_id, anwser)
-                break
-            elif finish == "stop":
-                # 保存回答
-                save_anwser(chat_id, anwser)
-                yield ""
-                break
-            else:
-                print("未知异常", finish)
-                pass
-                break
+        agent = None
+
+        if db_type.code == ChatAgent.name:
+            agent = ChatAgent()
+        elif db_type.code == CommonAgent.name:
+            agent = CommonAgent()
+        elif db_type.code == IotAgent.name:
+            agent = IotAgent()
+
+        old_message = ""
+        for responses in agent.run(messages=messages):
+            show_message = responses[-1]["content"].replace(old_message, "")
+            yield show_message
+            old_message = responses[-1]["content"]
+
+        end_time = time.perf_counter()
+        execution_time = (end_time - start_time) * 1000
+
+        count = 0
+        for response in responses:
+            function_call = response.get('function_call', None)
+            tool_name = None
+            tool_parameters = None
+            content = response["content"].replace(
+                "http://127.0.0.1:7865/static/", "http://127.0.0.1:8080/image/")
+            if function_call:
+                tool_name = function_call.get('name', None)
+                tool_parameters = function_call.get('arguments', None)
+
+            model = ContextModel(
+                chat_id=chat_id, content=content, role=response["role"], status=1, tool_name=tool_name, tool_parameters=tool_parameters, execution_time=execution_time, t=(time.time() * 1000 + count))
+            base_db.session.add(model)
+            count += 1
+
+        base_db.session.commit()
 
     return Response(stream_with_context(generate()))
 
@@ -348,14 +306,13 @@ def stream_():
 
     # 保存用户提问
     save_question(chat_id, question)
-    messages = get_context(chat_id, CHAT_TYPE.NORMAL)
-    return get_stream_response(chat_id, messages)
+    return get_stream_response(chat_id)
 
 
 @chat_controller.route("/re/stream", methods=["POST"])
 def re_stream_():
     """
-    再试一次
+    重试
     """
     chat_id = request.json["chat_id"]
 
@@ -369,5 +326,4 @@ def re_stream_():
             base_db.session.delete(last_context)
             base_db.session.commit()
 
-    messages = get_context(chat_id, CHAT_TYPE.NORMAL)
-    return get_stream_response(chat_id, messages)
+    return get_stream_response(chat_id)

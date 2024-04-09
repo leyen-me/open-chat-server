@@ -1,14 +1,16 @@
+import io
+import os
 import time
 import jwt
-from flask import Flask, g, request
+from flask import Flask, g, request, send_file
 from common import Result
 from controller import chat_controller, context_controller, type_controller, user_controller
 from constants import HOST, PORT, DEBUG, UID, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ECHO, STATIC_FOLDER, base_db
 from constants import ROUTE_WHITE_LIST, JWT_HEADER, JWT_SALT
 from model import TypeModel
-from prompts import prompts
 from utils import PathUtil
 from flask_cors import CORS
+from agents import *
 
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 
@@ -26,11 +28,20 @@ with app.app_context():
     base_db.session.commit()
 
     count = 0
-    for prompt in prompts:
-        model = TypeModel(code=prompt.code, name=prompt.name, user_id=UID,
-                          system_prompt=prompt.system_prompt, context_length=prompt.context_length, question_prompt=prompt.question_prompt, t=(time.time() * 1000 + count))
-        base_db.session.add(model)
-        count = count + 1
+    model = TypeModel(code=ChatAgent.name, name="仅聊天",
+                      user_id=UID, t=(time.time() * 1000 + count))
+    base_db.session.add(model)
+
+    count = count + 1
+    model = TypeModel(code=CommonAgent.name, name="通用",
+                      user_id=UID, t=(time.time() * 1000 + count))
+    base_db.session.add(model)
+
+    count = count + 1
+    model = TypeModel(code=IotAgent.name, name="IoT",
+                      user_id=UID, t=(time.time() * 1000 + count))
+    base_db.session.add(model)
+
     base_db.session.commit()
 
 
@@ -59,6 +70,15 @@ def before():
 @app.errorhandler(Exception)
 def exception(error_msg):
     return Result.error(str(error_msg))
+
+
+@app.route('/image/<string:id>')
+def send_image(id):
+    img_path = os.path.join(os.getcwd(), "workspace", "ci_workspace", id)
+    response = send_file(img_path, mimetype='image/jpeg', as_attachment=True)
+    response.headers['Content-Disposition'] = 'inline; filename="image.jpg"'
+    return response
+
 
 app.register_blueprint(user_controller)
 app.register_blueprint(chat_controller)
