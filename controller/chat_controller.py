@@ -9,9 +9,10 @@ from uuid import uuid4
 from flask import Blueprint as Controller, Response, make_response, request, g, send_file, stream_with_context
 from constants import base_db, CHAT_TYPE
 from model import ChatModel, ContextModel, TypeModel
-from common import Result
+from common import Result, AGENT_REGISTRY
 from utils import FileUtil
 from agents import *
+
 
 chat_controller = Controller("chat", __name__, url_prefix='/chat')
 
@@ -257,14 +258,7 @@ def get_stream_response(chat_id):
     start_time = time.perf_counter()
 
     def generate():
-        agent = None
-
-        if db_type.code == ChatAgent.name:
-            agent = ChatAgent()
-        elif db_type.code == CommonAgent.name:
-            agent = CommonAgent()
-        elif db_type.code == IotAgent.name:
-            agent = IotAgent()
+        agent = AGENT_REGISTRY[db_type.code]()
 
         old_message = ""
         for responses in agent.run(messages=messages):

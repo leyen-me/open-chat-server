@@ -3,8 +3,10 @@ from qwen_agent.agents import Assistant
 from constants.base_client import BASE_MODEL, BASE_URL, API_KEY
 from constants import CHAT_ROLES
 from tools import *
+from common import register_agent
 
 
+@register_agent(name="resume_agent")
 class ResumeAgent(BaseAgent):
 
     name = "resume_agent"

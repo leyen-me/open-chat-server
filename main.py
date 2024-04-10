@@ -41,6 +41,11 @@ with app.app_context():
     model = TypeModel(code=IotAgent.name, name="IoT",
                       user_id=UID, t=(time.time() * 1000 + count))
     base_db.session.add(model)
+    
+    count = count + 1
+    model = TypeModel(code=CompileTeacherAgent.name, name="编译原理老师",
+                      user_id=UID, t=(time.time() * 1000 + count))
+    base_db.session.add(model)
 
     base_db.session.commit()
 

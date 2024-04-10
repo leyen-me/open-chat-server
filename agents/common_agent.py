@@ -2,8 +2,10 @@ from .base_agent import BaseAgent
 from qwen_agent.agents import Assistant
 from constants.base_client import BASE_MODEL, BASE_URL, API_KEY
 from tools import *
+from common import register_agent
 
 
+@register_agent(name="common_agent")
 class CommonAgent(BaseAgent):
 
     name = "common_agent"

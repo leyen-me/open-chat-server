@@ -1,8 +1,10 @@
 from .base_agent import BaseAgent
 from qwen_agent.agents import Assistant
 from constants.base_client import BASE_MODEL, BASE_URL, API_KEY
+from common import register_agent
 
 
+@register_agent(name="chat_agent")
 class ChatAgent(BaseAgent):
 
     name = "chat_agent"

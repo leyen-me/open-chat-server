@@ -1,8 +1,10 @@
 from .base_agent import BaseAgent
 from qwen_agent.agents import Assistant
 from constants.base_client import BASE_MODEL, BASE_URL, API_KEY
+from common import register_agent
 
 
+@register_agent(name="iot_agent")
 class IotAgent(BaseAgent):
 
     name = "iot_agent"
