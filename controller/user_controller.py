@@ -34,8 +34,3 @@ def login():
 @user_controller.route("/info", methods=["GET"])
 def info():
     return Result.ok(data=g.uid)
-
-
-@user_controller.route("/", methods=["GET"])
-def page():
-    return Result.ok(data="hello, world")
